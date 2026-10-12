@@ -35,9 +35,6 @@
     </script>
 
     <style>
-        /* ===================================================
-           PALETAS Y TEMA UNIFICADO (BIBLIA Y REPORTE)
-           =================================================== */
         :root {
           --bg-color: #FDFBF7;
           --card-bg: #FFFFFF;
@@ -501,7 +498,7 @@
                 </div>
             </div>
 
-            <!-- TARJETA BANNER INFORMATIVA CON BOTÓN DE DESCARGA PDF DIRECTO -->
+            <!-- TARJETA BANNER INFORMATIVA CON BOTONES DE DESCARGA (PDF E IMAGEN) -->
             <div id="banner-devocional" class="tema-card p-6 rounded-2xl border shadow-sm space-y-4">
                 <div class="flex items-start gap-3">
                     <div class="p-2 bg-blue-500/10 text-blue-600 rounded-lg">
@@ -522,6 +519,9 @@
                     </button>
                     <button type="button" onclick="downloadPDF()" class="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-1.5 shadow transition">
                         <i data-lucide="file-text" class="w-4 h-4"></i> Descargar PDF
+                    </button>
+                    <button type="button" onclick="downloadImage()" class="px-4 py-2 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-xl flex items-center gap-1.5 shadow transition">
+                        <i data-lucide="image" class="w-4 h-4"></i> Descargar Imagen
                     </button>
                 </div>
             </div>
@@ -609,6 +609,7 @@
                     <div class="space-x-2 flex flex-wrap gap-2">
                         <button onclick="window.print()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg">Imprimir</button>
                         <button onclick="downloadPDF()" class="px-3.5 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg">Descargar PDF</button>
+                        <button onclick="downloadImage()" class="px-3.5 py-1.5 text-xs font-semibold bg-purple-600 text-white rounded-lg">Descargar Imagen</button>
                     </div>
                 </div>
 
@@ -737,7 +738,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGICA UNIFICADA Y PDF DIRECTO -->
+    <!-- SCRIPT LOGICA UNIFICADA Y DESCARGA NATIVA INFALIBLE -->
     <script>
         const LIBROS_BIBLIA = [
           { id: 'GEN', nombre: 'Génesis', testamento: 'AT', archivo: 'Genesis.txt', caps: 50 },
@@ -1261,7 +1262,7 @@
           document.getElementById('modalAvances').classList.remove('oculto');
         }
 
-        /* --- DEVOCIONAL Y PDF --- */
+        /* --- DEVOCIONAL, PDF Y DESCARGA NATIVA DE IMAGEN --- */
         function addKeyWordRow(word = '', meaning = '') {
             keyWordCount++;
             const container = document.getElementById('keywords-container');
@@ -1320,15 +1321,227 @@
 
         function downloadPDF() {
             updatePreviewDocument();
-            const element = document.getElementById('pdf-container');
+            const element = document.getElementById('doc-page-1');
+            const clone = element.cloneNode(true);
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px';
+            clone.style.top = '0px';
+            clone.style.width = '210mm';
+            document.body.appendChild(clone);
+
             const opt = { 
                 margin: [10, 10, 10, 10], 
-                filename: `Devocional_${document.getElementById('input-libro').value}_${document.getElementById('input-capitulo').value}.pdf`, 
+                filename: `Devocional_${document.getElementById('input-libro').value || 'Biblia'}_${document.getElementById('input-capitulo').value || '1'}.pdf`, 
                 image: { type: 'jpeg', quality: 0.98 }, 
                 html2canvas: { scale: 2, useCORS: true }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
             };
-            html2pdf().set(opt).from(element).save();
+
+            html2pdf().set(opt).from(clone).save().then(() => {
+                document.body.removeChild(clone);
+            }).catch(err => {
+                document.body.removeChild(clone);
+                console.error("Error al generar PDF:", err);
+            });
+        }
+
+        function downloadImage() {
+            updatePreviewDocument();
+            
+            // Extracción segura de datos
+            const fecha = document.getElementById('input-fecha').value.split('-').reverse().join('/') || '—';
+            const discipulo = document.getElementById('input-discipulo').value || '—';
+            const libro = document.getElementById('input-libro').value || 'Biblia';
+            const capitulo = document.getElementById('input-capitulo').value || '1';
+            const impresion = document.getElementById('input-impresion').value || 'Sin observaciones.';
+            const mandato = document.getElementById('input-mandato').value || 'Sin aplicación anotada.';
+
+            // Recopilar palabras clave
+            const keywords = [];
+            document.querySelectorAll('#keywords-container > div').forEach(row => {
+                const w = row.querySelector('.kw-palabra').value.trim();
+                const s = row.querySelector('.kw-significado').value.trim();
+                if (w || s) keywords.push({ w, s });
+            });
+
+            // Crear Canvas 2D Nativo (Ultra rápido, cero fallos en móviles y GitHub Pages)
+            const canvas = document.createElement('canvas');
+            canvas.width = 1200;
+            canvas.height = 1600;
+            const ctx = canvas.getContext('2d');
+
+            // Fondo blanco
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Borde exterior elegante
+            ctx.strokeStyle = '#CBD5E1';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
+
+            // Encabezado
+            ctx.fillStyle = '#0B1727';
+            ctx.font = 'bold 36px sans-serif';
+            ctx.fillText('DEVOCIONAL DIARIO', 80, 120);
+
+            ctx.fillStyle = '#64748B';
+            ctx.font = '20px sans-serif';
+            ctx.fillText('Reflexión y Aplicación Personal', 80, 155);
+
+            // Fecha y Pasaje a la derecha
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#111111';
+            ctx.font = 'bold 22px sans-serif';
+            ctx.fillText(`FECHA: ${fecha}`, canvas.width - 80, 110);
+            ctx.fillText(`PASAJE: ${libro} ${capitulo}`, canvas.width - 80, 145);
+            ctx.textAlign = 'left';
+
+            // Línea divisoria
+            ctx.strokeStyle = '#0B1727';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(80, 190);
+            ctx.lineTo(canvas.width - 80, 190);
+            ctx.stroke();
+
+            // Discípulo
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillStyle = '#333333';
+            ctx.fillText('NOMBRE DEL DISCÍPULO:', 80, 245);
+            ctx.font = '22px sans-serif';
+            ctx.fillText(discipulo, 350, 245);
+            ctx.strokeStyle = '#94A3B8';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(340, 255);
+            ctx.lineTo(canvas.width - 80, 255);
+            ctx.stroke();
+
+            let cursorY = 310;
+
+            // Sección: Impresión
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillStyle = '#111111';
+            ctx.fillText('¿QUÉ ME IMPRESIONÓ MÁS DEL PASAJE?', 80, cursorY);
+            cursorY += 20;
+
+            ctx.fillStyle = '#FAFAFA';
+            ctx.fillRect(80, cursorY, canvas.width - 160, 160);
+            ctx.strokeStyle = '#CBD5E1';
+            ctx.strokeRect(80, cursorY, canvas.width - 160, 160);
+
+            ctx.fillStyle = '#333333';
+            ctx.font = '20px sans-serif';
+            wrapText(ctx, impresion, 100, cursorY + 35, canvas.width - 200, 28);
+            cursorY += 190;
+
+            // Sección: Palabras Clave
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillStyle = '#111111';
+            ctx.fillText('PALABRAS CLAVE Y SIGNIFICADO', 80, cursorY);
+            cursorY += 15;
+
+            // Tabla cabecera
+            ctx.fillStyle = '#F1F5F9';
+            ctx.fillRect(80, cursorY, canvas.width - 160, 40);
+            ctx.strokeRect(80, cursorY, canvas.width - 160, 40);
+            ctx.font = 'bold 18px sans-serif';
+            ctx.fillText('Palabra', 100, cursorY + 26);
+            ctx.fillText('Significado', 420, cursorY + 26);
+            cursorY += 40;
+
+            // Filas de palabras clave
+            if (keywords.length === 0) {
+                ctx.strokeRect(80, cursorY, canvas.width - 160, 45);
+                ctx.fillStyle = '#64748B';
+                ctx.font = 'italic 18px sans-serif';
+                ctx.fillText('No se agregaron palabras clave', 100, cursorY + 28);
+                cursorY += 45;
+            } else {
+                keywords.forEach(kw => {
+                    ctx.strokeRect(80, cursorY, canvas.width - 160, 45);
+                    ctx.fillStyle = '#111111';
+                    ctx.font = 'bold 18px sans-serif';
+                    ctx.fillText(kw.w, 100, cursorY + 28);
+                    ctx.font = '18px sans-serif';
+                    ctx.fillText(kw.s, 420, cursorY + 28);
+                    cursorY += 45;
+                });
+            }
+
+            cursorY += 25;
+
+            // Sección: Aplicación Personal
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillStyle = '#111111';
+            ctx.fillText('¿QUÉ DESEA DIOS QUE YO HAGA? (APLICACIÓN)', 80, cursorY);
+            cursorY += 20;
+
+            ctx.fillStyle = '#FAFAFA';
+            ctx.fillRect(80, cursorY, canvas.width - 160, 200);
+            ctx.strokeRect(80, cursorY, canvas.width - 160, 200);
+
+            ctx.fillStyle = '#333333';
+            ctx.font = '20px sans-serif';
+            wrapText(ctx, mandato, 100, cursorY + 35, canvas.width - 200, 28);
+
+            // Pie de página
+            ctx.strokeStyle = '#0B1727';
+            ctx.beginPath();
+            ctx.moveTo(80, canvas.height - 100);
+            ctx.lineTo(canvas.width - 80, canvas.height - 100);
+            ctx.stroke();
+
+            ctx.fillStyle = '#0B1727';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText('DEVOCIONAL DIARIO', 80, canvas.height - 65);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#64748B';
+            ctx.font = '16px sans-serif';
+            ctx.fillText(`${libro} ${capitulo} • ${discipulo}`, canvas.width - 80, canvas.height - 65);
+
+            // Descargar imagen generada
+            const nombreArchivo = `Devocional_${libro}_${capitulo}.png`;
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    alert('No se pudo generar la imagen.');
+                    return;
+                }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = nombreArchivo;
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 300);
+            }, 'image/png');
+        }
+
+        // Función auxiliar para ajustar texto largo en líneas dentro del canvas
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            const paragraphs = text.split('\n');
+            let currentY = y;
+            for (let p = 0; p < paragraphs.length; p++) {
+                const words = paragraphs[p].split(' ');
+                let line = '';
+                for (let n = 0; n < words.length; n++) {
+                    const testLine = line + words[n] + ' ';
+                    const metrics = context.measureText(testLine);
+                    const testWidth = metrics.width;
+                    if (testWidth > maxWidth && n > 0) {
+                        context.fillText(line, x, currentY);
+                        line = words[n] + ' ';
+                        currentY += lineHeight;
+                    } else {
+                        line = testLine;
+                    }
+                }
+                context.fillText(line, x, currentY);
+                currentY += lineHeight;
+            }
         }
 
         function limpiarFormulario() {
