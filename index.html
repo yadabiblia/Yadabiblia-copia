@@ -1322,6 +1322,8 @@
         function downloadPDF() {
             updatePreviewDocument();
             const element = document.getElementById('doc-page-1');
+            
+            // Creamos un clon exacto del elemento para evitar problemas con contenedores ocultos o dinámicos
             const clone = element.cloneNode(true);
             clone.style.position = 'absolute';
             clone.style.left = '-9999px';
@@ -1333,22 +1335,26 @@
                 margin: [10, 10, 10, 10], 
                 filename: `Devocional_${document.getElementById('input-libro').value || 'Biblia'}_${document.getElementById('input-capitulo').value || '1'}.pdf`, 
                 image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true }, 
+                html2canvas: { scale: 2, useCORS: true, logging: false }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
             };
 
             html2pdf().set(opt).from(clone).save().then(() => {
-                document.body.removeChild(clone);
+                if (clone.parentNode) {
+                    document.body.removeChild(clone);
+                }
             }).catch(err => {
-                document.body.removeChild(clone);
+                if (clone.parentNode) {
+                    document.body.removeChild(clone);
+                }
                 console.error("Error al generar PDF:", err);
+                alert("Hubo un error al generar el PDF. Intenta nuevamente.");
             });
         }
 
         function downloadImage() {
             updatePreviewDocument();
             
-            // Extracción segura de datos
             const fecha = document.getElementById('input-fecha').value.split('-').reverse().join('/') || '—';
             const discipulo = document.getElementById('input-discipulo').value || '—';
             const libro = document.getElementById('input-libro').value || 'Biblia';
@@ -1356,7 +1362,6 @@
             const impresion = document.getElementById('input-impresion').value || 'Sin observaciones.';
             const mandato = document.getElementById('input-mandato').value || 'Sin aplicación anotada.';
 
-            // Recopilar palabras clave
             const keywords = [];
             document.querySelectorAll('#keywords-container > div').forEach(row => {
                 const w = row.querySelector('.kw-palabra').value.trim();
@@ -1364,22 +1369,18 @@
                 if (w || s) keywords.push({ w, s });
             });
 
-            // Crear Canvas 2D Nativo (Ultra rápido, cero fallos en móviles y GitHub Pages)
             const canvas = document.createElement('canvas');
             canvas.width = 1200;
             canvas.height = 1600;
             const ctx = canvas.getContext('2d');
 
-            // Fondo blanco
             ctx.fillStyle = '#FFFFFF';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Borde exterior elegante
             ctx.strokeStyle = '#CBD5E1';
             ctx.lineWidth = 4;
             ctx.strokeRect(40, 40, canvas.width - 80, canvas.height - 80);
 
-            // Encabezado
             ctx.fillStyle = '#0B1727';
             ctx.font = 'bold 36px sans-serif';
             ctx.fillText('DEVOCIONAL DIARIO', 80, 120);
@@ -1388,7 +1389,6 @@
             ctx.font = '20px sans-serif';
             ctx.fillText('Reflexión y Aplicación Personal', 80, 155);
 
-            // Fecha y Pasaje a la derecha
             ctx.textAlign = 'right';
             ctx.fillStyle = '#111111';
             ctx.font = 'bold 22px sans-serif';
@@ -1396,7 +1396,6 @@
             ctx.fillText(`PASAJE: ${libro} ${capitulo}`, canvas.width - 80, 145);
             ctx.textAlign = 'left';
 
-            // Línea divisoria
             ctx.strokeStyle = '#0B1727';
             ctx.lineWidth = 3;
             ctx.beginPath();
@@ -1404,7 +1403,6 @@
             ctx.lineTo(canvas.width - 80, 190);
             ctx.stroke();
 
-            // Discípulo
             ctx.font = 'bold 20px sans-serif';
             ctx.fillStyle = '#333333';
             ctx.fillText('NOMBRE DEL DISCÍPULO:', 80, 245);
@@ -1419,7 +1417,6 @@
 
             let cursorY = 310;
 
-            // Sección: Impresión
             ctx.font = 'bold 20px sans-serif';
             ctx.fillStyle = '#111111';
             ctx.fillText('¿QUÉ ME IMPRESIONÓ MÁS DEL PASAJE?', 80, cursorY);
@@ -1435,13 +1432,11 @@
             wrapText(ctx, impresion, 100, cursorY + 35, canvas.width - 200, 28);
             cursorY += 190;
 
-            // Sección: Palabras Clave
             ctx.font = 'bold 20px sans-serif';
             ctx.fillStyle = '#111111';
             ctx.fillText('PALABRAS CLAVE Y SIGNIFICADO', 80, cursorY);
             cursorY += 15;
 
-            // Tabla cabecera
             ctx.fillStyle = '#F1F5F9';
             ctx.fillRect(80, cursorY, canvas.width - 160, 40);
             ctx.strokeRect(80, cursorY, canvas.width - 160, 40);
@@ -1450,7 +1445,6 @@
             ctx.fillText('Significado', 420, cursorY + 26);
             cursorY += 40;
 
-            // Filas de palabras clave
             if (keywords.length === 0) {
                 ctx.strokeRect(80, cursorY, canvas.width - 160, 45);
                 ctx.fillStyle = '#64748B';
@@ -1471,7 +1465,6 @@
 
             cursorY += 25;
 
-            // Sección: Aplicación Personal
             ctx.font = 'bold 20px sans-serif';
             ctx.fillStyle = '#111111';
             ctx.fillText('¿QUÉ DESEA DIOS QUE YO HAGA? (APLICACIÓN)', 80, cursorY);
@@ -1485,7 +1478,6 @@
             ctx.font = '20px sans-serif';
             wrapText(ctx, mandato, 100, cursorY + 35, canvas.width - 200, 28);
 
-            // Pie de página
             ctx.strokeStyle = '#0B1727';
             ctx.beginPath();
             ctx.moveTo(80, canvas.height - 100);
@@ -1500,7 +1492,6 @@
             ctx.font = '16px sans-serif';
             ctx.fillText(`${libro} ${capitulo} • ${discipulo}`, canvas.width - 80, canvas.height - 65);
 
-            // Descargar imagen generada
             const nombreArchivo = `Devocional_${libro}_${capitulo}.png`;
             canvas.toBlob((blob) => {
                 if (!blob) {
@@ -1520,7 +1511,6 @@
             }, 'image/png');
         }
 
-        // Función auxiliar para ajustar texto largo en líneas dentro del canvas
         function wrapText(context, text, x, y, maxWidth, lineHeight) {
             const paragraphs = text.split('\n');
             let currentY = y;
