@@ -1323,29 +1323,30 @@
             updatePreviewDocument();
             const element = document.getElementById('doc-page-1');
             
-            // Creamos un clon exacto del elemento para evitar problemas con contenedores ocultos o dinámicos
-            const clone = element.cloneNode(true);
-            clone.style.position = 'absolute';
-            clone.style.left = '-9999px';
-            clone.style.top = '0px';
-            clone.style.width = '210mm';
-            document.body.appendChild(clone);
-
+            // Renderizado vectorial directo por html2pdf.js con opciones optimizadas para evitar páginas en blanco
             const opt = { 
                 margin: [10, 10, 10, 10], 
                 filename: `Devocional_${document.getElementById('input-libro').value || 'Biblia'}_${document.getElementById('input-capitulo').value || '1'}.pdf`, 
                 image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true, logging: false }, 
+                html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true }, 
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
             };
 
+            // Creamos un contenedor temporal visible en pantalla pero fuera de la vista para asegurar renderizado correcto
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '0';
+            tempContainer.style.top = '-9999px';
+            tempContainer.style.width = '210mm';
+            const clone = element.cloneNode(true);
+            tempContainer.appendChild(clone);
+            document.body.appendChild(tempContainer);
+
             html2pdf().set(opt).from(clone).save().then(() => {
-                if (clone.parentNode) {
-                    document.body.removeChild(clone);
-                }
+                document.body.removeChild(tempContainer);
             }).catch(err => {
-                if (clone.parentNode) {
-                    document.body.removeChild(clone);
+                if (tempContainer.parentNode) {
+                    document.body.removeChild(tempContainer);
                 }
                 console.error("Error al generar PDF:", err);
                 alert("Hubo un error al generar el PDF. Intenta nuevamente.");
