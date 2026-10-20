@@ -216,7 +216,7 @@
           border-bottom: 4px solid var(--btn-3d-shadow);
           border-radius: 14px;
           box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
-          width: 250px;
+          width: 270px;
           display: none;
           flex-direction: column;
           overflow: hidden;
@@ -246,18 +246,19 @@
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             body { background: white !important; font-size: 12pt; }
+            .page-break { page-break-before: always; }
         }
 
         .paper-sheet {
             width: 210mm;
-            min-height: auto;
+            min-height: 297mm;
             padding: 18mm 20mm;
             margin: 0 auto;
             background: white !important;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
             color: #111 !important;
             font-size: 13px;
-            line-height: 1.5;
+            line-height: 1.4;
             box-sizing: border-box;
             position: relative;
         }
@@ -271,12 +272,12 @@
 
         .ruled-box {
             border: 1px solid #333;
-            min-height: 80px;
-            padding: 10px;
+            min-height: 70px;
+            padding: 8px;
             word-break: break-word;
             white-space: pre-wrap;
-            border-radius: 4px;
-            background-color: #fafafa;
+            border-radius: 2px;
+            background-color: #fff;
         }
 
         .grid-cards {
@@ -380,6 +381,7 @@
         .fila-versiculo { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; font-size: 1.1rem; }
         .num-ver-estandar { font-weight: 800; color: var(--accent-color); min-width: 24px; }
         .texto-ver-estandar { flex: 1; }
+        .fila-versiculo.leyendo { background-color: rgba(217, 119, 6, 0.1); border-radius: 8px; padding: 4px; }
 
         .btn-continuar-cap {
           background-color: var(--accent-color); color: #ffffff; border: none;
@@ -429,7 +431,8 @@
 
               <div class="menu-desplegable" id="menuDesplegable" onclick="event.stopPropagation()">
                 <button class="menu-item" onclick="mostrarVistaBibliaPrincipal()">📖 Leer la Biblia</button>
-                <button class="menu-item" onclick="abrirVistaReporteDesdeMenu('form')">📝 Devocional Diario</button>
+                <button class="menu-item" onclick="abrirVistaReporteDesdeMenu('form')">📝 Devocional Diario (1 Pág)</button>
+                <button class="menu-item" onclick="abrirVistaReporteDesdeMenu('discipulado')">📋 Tareas Discipulado (2 Págs)</button>
                 <button class="menu-item" onclick="abrirVistaReporteDesdeMenu('saved')">📂 Devocionales Guardados</button>
                 <button class="menu-item" onclick="abrirModalLogin()">👤 <span class="lblUsuarioMenu">Inicio de sesión</span></button>
                 <button class="menu-item text-red-500 font-semibold hidden" id="btnCerrarSesionMenu" onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
@@ -453,7 +456,7 @@
         <!-- ================= VISTA BIBLIA ================= -->
         <div id="seccionBiblia">
             <div id="vistaTestamentos">
-              <h2 style="margin-top:0;">Selecciona un Testamento</h2>
+              <h2 style="margin-top:0;" class="text-xl font-bold font-serif mb-4">Selecciona un Testamento</h2>
               <div class="grid-cards">
                 <div class="card-seleccion" onclick="seleccionarTestamento('AT')">Antiguo Testamento</div>
                 <div class="card-seleccion" onclick="seleccionarTestamento('NT')">Nuevo Testamento</div>
@@ -468,10 +471,10 @@
             </div>
         </div>
 
-        <!-- ================= VISTA DEVOCIONAL DIARIO ================= -->
+        <!-- ================= VISTA DEVOCIONAL Y DISCIPULADO ================= -->
         <div id="seccionReporte" class="oculto space-y-6">
             
-            <!-- ENCABEZADO DEVOCIONAL DIARIO UNIFICADO -->
+            <!-- ENCABEZADO DEVOCIONAL DIARIO UNIFICADO CON BARRAS DE NAVEGACIÓN -->
             <div class="bg-[#0b1727] text-white p-4 rounded-xl shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <div class="bg-white/10 p-2.5 rounded-xl border border-white/20">
@@ -489,8 +492,9 @@
                     <button onclick="toggleReportTab('preview')" id="tab-btn-preview" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-700/50 transition flex items-center gap-1.5">
                         <i data-lucide="file-text" class="w-4 h-4"></i> Vista Previa PDF
                     </button>
-                    <button onclick="toggleReportTab('saved')" id="tab-btn-saved" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-700/50 transition flex items-center gap-1.5">
+                    <button onclick="toggleReportTab('saved')" id="tab-btn-saved" class="px-3.5 py-2 text-xs font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-slate-700/50 transition flex items-center gap-1.5 relative">
                         <i data-lucide="folder-archive" class="w-4 h-4"></i> Guardados
+                        <span id="saved-badge" class="ml-1 px-1.5 py-0.2 bg-amber-500 text-slate-950 text-[10px] font-bold rounded-full hidden">0</span>
                     </button>
                     <button onclick="mostrarVistaBibliaPrincipal()" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow transition">
                         <i data-lucide="book-open" class="w-4 h-4"></i> Seguir leyendo la Biblia
@@ -498,7 +502,17 @@
                 </div>
             </div>
 
-            <!-- TARJETA BANNER INFORMATIVA CON BOTONES DE DESCARGA (PDF E IMAGEN) -->
+            <!-- BOTONES DE SELECCIÓN DE MODO: SIMPLE VS DISCIPULADO -->
+            <div class="flex items-center gap-3">
+                <button onclick="cambiarModoDevocional('simple')" id="btn-modo-simple" class="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white shadow border border-blue-500">
+                    📝 Modo: Devocional Simple (1 Página)
+                </button>
+                <button onclick="cambiarModoDevocional('discipulado')" id="btn-modo-discipulado" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-700/30 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-600 transition">
+                    📋 Modo: Tareas de Discipulado (2 Páginas)
+                </button>
+            </div>
+
+            <!-- TARJETA BANNER INFORMATIVA CON BOTONES DE ACCIÓN -->
             <div id="banner-devocional" class="tema-card p-6 rounded-2xl border shadow-sm space-y-4">
                 <div class="flex items-start gap-3">
                     <div class="p-2 bg-blue-500/10 text-blue-600 rounded-lg">
@@ -520,7 +534,7 @@
                     <button type="button" onclick="downloadPDF()" class="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl flex items-center gap-1.5 shadow transition">
                         <i data-lucide="file-text" class="w-4 h-4"></i> Descargar PDF
                     </button>
-                    <button type="button" onclick="downloadImage()" class="px-4 py-2 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-xl flex items-center gap-1.5 shadow transition">
+                    <button type="button" id="btnDescargarImagen" onclick="downloadImage()" class="px-4 py-2 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-xl flex items-center gap-1.5 shadow transition">
                         <i data-lucide="image" class="w-4 h-4"></i> Descargar Imagen
                     </button>
                 </div>
@@ -562,7 +576,11 @@
                             </h3>
                             <div>
                                 <label class="block text-xs font-semibold mb-1.5 tema-texto-titulo">¿Qué me impresionó más del pasaje?</label>
-                                <textarea id="input-impresion" rows="5" placeholder="Escribe lo que captó tu atención..." class="w-full text-sm p-3 rounded-xl outline-none resize-y tema-input border"></textarea>
+                                <textarea id="input-impresion" rows="4" placeholder="Escribe lo que captó tu atención..." class="w-full text-sm p-3 rounded-xl outline-none resize-y tema-input border"></textarea>
+                            </div>
+                            <div id="campo-idea-principal" class="oculto">
+                                <label class="block text-xs font-semibold mb-1.5 tema-texto-titulo">¿Cuál es la idea principal?</label>
+                                <textarea id="input-idea" rows="3" placeholder="Resume el mensaje central del pasaje..." class="w-full text-sm p-3 rounded-xl outline-none resize-y tema-input border"></textarea>
                             </div>
                         </div>
 
@@ -584,9 +602,35 @@
                             <h3 class="font-semibold text-sm border-b pb-2 flex items-center gap-2 tema-texto-titulo">
                                 <i data-lucide="heart-handshake" class="w-4 h-4 text-emerald-600"></i> Aplicación Personal
                             </h3>
-                            <div>
+                            
+                            <!-- Campo para Devocional Simple -->
+                            <div id="campo-aplicacion-simple">
                                 <label class="block text-xs font-semibold mb-1.5 tema-texto-titulo">¿Qué desea Dios que yo haga?</label>
-                                <textarea id="input-mandato" rows="12" placeholder="Escribe la instrucción directa..." class="w-full text-sm p-3 rounded-xl outline-none resize-y tema-input border"></textarea>
+                                <textarea id="input-mandato-simple" rows="12" placeholder="Escribe la instrucción directa..." class="w-full text-sm p-3 rounded-xl outline-none resize-y tema-input border"></textarea>
+                            </div>
+
+                            <!-- Campos para Tareas de Discipulado -->
+                            <div id="campos-discipulado-ext" class="space-y-4 oculto">
+                                <div>
+                                    <label class="block text-xs font-semibold mb-1.5 tema-texto-titulo">¿Qué significa en mi vida y qué desea Dios que yo haga?</label>
+                                    <textarea id="input-vida" rows="3" placeholder="Aplicación directa a tu caminar diario..." class="w-full text-sm p-3 rounded-xl outline-none resize-y tema-input border"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold mb-1.5 tema-texto-titulo">¿Hay un mandato que obedecer?</label>
+                                    <textarea id="input-mandato" rows="2" placeholder="Instrucción directa..." class="w-full text-sm p-3 rounded-xl outline-none resize-y tema-input border"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold mb-1.5 tema-texto-titulo">¿Hay un ejemplo que seguir?</label>
+                                    <textarea id="input-ejemplo" rows="2" placeholder="Acción o actitud a imitar..." class="w-full text-sm p-3 rounded-xl outline-none resize-y tema-input border"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold mb-1.5 tema-texto-titulo">¿Hay un pecado que evitar?</label>
+                                    <textarea id="input-pecado" rows="2" placeholder="Conductas a desechar..." class="w-full text-sm p-3 rounded-xl outline-none resize-y tema-input border"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold mb-1.5 tema-texto-titulo">¿Hay una promesa para hacerla mía?</label>
+                                    <textarea id="input-promesa" rows="2" placeholder="Promesa dada por Dios..." class="w-full text-sm p-3 rounded-xl outline-none resize-y tema-input border"></textarea>
+                                </div>
                             </div>
                         </div>
 
@@ -609,17 +653,18 @@
                     <div class="space-x-2 flex flex-wrap gap-2">
                         <button onclick="window.print()" class="px-3 py-1.5 text-xs font-medium bg-slate-800 text-white rounded-lg">Imprimir</button>
                         <button onclick="downloadPDF()" class="px-3.5 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg">Descargar PDF</button>
-                        <button onclick="downloadImage()" class="px-3.5 py-1.5 text-xs font-semibold bg-purple-600 text-white rounded-lg">Descargar Imagen</button>
+                        <button onclick="downloadImage()" id="btnPreviewDescargarImagen" class="px-3.5 py-1.5 text-xs font-semibold bg-purple-600 text-white rounded-lg">Descargar Imagen</button>
                     </div>
                 </div>
 
                 <div id="pdf-container" class="space-y-6 py-2">
+                    <!-- PÁGINA 1 -->
                     <div class="paper-sheet flex flex-col justify-between" id="doc-page-1">
                         <div>
                             <div class="flex items-start justify-between border-b-2 border-black pb-4 mb-4">
                                 <div class="font-serif text-black leading-tight">
-                                    <div class="text-xl font-black tracking-widest uppercase">DEVOCIONAL DIARIO</div>
-                                    <div class="text-[10px] font-sans font-semibold tracking-normal text-gray-600 pt-0.5 mt-0.5">Reflexión y Aplicación Personal</div>
+                                    <div class="text-xl font-black tracking-widest uppercase" id="preview-titulo-doc">DEVOCIONAL DIARIO</div>
+                                    <div class="text-[10px] font-sans font-semibold tracking-normal text-gray-600 pt-0.5 mt-0.5" id="preview-subtitulo-doc">Reflexión y Aplicación Personal</div>
                                 </div>
                                 <div class="text-right font-serif text-xs space-y-1 pt-1">
                                     <div><span class="font-bold">FECHA:</span> <span id="preview-fecha" class="border-b border-black min-w-[90px] inline-block text-center font-sans"></span></div>
@@ -637,6 +682,11 @@
                                 <div id="preview-impresion" class="ruled-box font-sans text-xs"></div>
                             </div>
 
+                            <div class="my-4 oculto" id="preview-box-idea">
+                                <p class="font-bold text-xs uppercase mb-1.5">¿Cuál es la idea principal?</p>
+                                <div id="preview-idea" class="ruled-box font-sans text-xs"></div>
+                            </div>
+
                             <div class="my-4">
                                 <p class="font-bold text-xs uppercase mb-2">Palabras clave y significado</p>
                                 <table class="w-full border-collapse border border-black text-xs">
@@ -650,15 +700,55 @@
                                 </table>
                             </div>
 
-                            <div class="my-4">
+                            <div class="my-4" id="preview-box-mandato-simple">
                                 <p class="font-bold text-xs uppercase mb-1.5">¿Qué desea Dios que yo haga? (Aplicación)</p>
-                                <div id="preview-mandato" class="ruled-box font-sans text-xs"></div>
+                                <div id="preview-mandato-simple" class="ruled-box font-sans text-xs"></div>
                             </div>
                         </div>
 
                         <div class="pt-4 border-t border-black flex justify-between items-center text-[11px] font-serif font-bold tracking-widest uppercase mt-6">
-                            <span>DEVOCIONAL DIARIO</span>
-                            <span class="text-[10px] font-sans font-normal text-gray-500" id="preview-p2-meta"></span>
+                            <span id="preview-footer-title">DEVOCIONAL DIARIO</span>
+                            <span class="text-[10px] font-sans font-normal text-gray-500" id="preview-p1-meta">Página 1 de 1</span>
+                        </div>
+                    </div>
+
+                    <!-- PÁGINA 2 (SOLO DISCIPULADO) -->
+                    <div class="paper-sheet flex flex-col justify-between page-break oculto" id="doc-page-2">
+                        <div>
+                            <div class="flex justify-between items-center border-b border-black pb-2 mb-6">
+                                <span class="font-serif font-bold text-xs uppercase tracking-wider">IGLESIA BÍBLICA NACIONES A LA LUZ • TAREAS DE DISCIPULADO</span>
+                                <span class="text-xs font-serif font-bold" id="preview-p2-meta"></span>
+                            </div>
+
+                            <div class="mb-5">
+                                <p class="font-bold text-sm mb-1.5">¿Qué significa en mi vida y qué desea Dios que yo haga?</p>
+                                <div id="preview-vida" class="ruled-box font-sans text-xs min-h-[90px]"></div>
+                            </div>
+
+                            <div class="mb-5">
+                                <p class="font-bold text-sm mb-1.5">¿Hay un mandato que obedecer?</p>
+                                <div id="preview-mandato" class="ruled-box font-sans text-xs min-h-[75px]"></div>
+                            </div>
+
+                            <div class="mb-5">
+                                <p class="font-bold text-sm mb-1.5">¿Hay un ejemplo que seguir?</p>
+                                <div id="preview-ejemplo" class="ruled-box font-sans text-xs min-h-[75px]"></div>
+                            </div>
+
+                            <div class="mb-5">
+                                <p class="font-bold text-sm mb-1.5">¿Hay un pecado que evitar?</p>
+                                <div id="preview-pecado" class="ruled-box font-sans text-xs min-h-[75px]"></div>
+                            </div>
+
+                            <div class="mb-5">
+                                <p class="font-bold text-sm mb-1.5">¿Hay una promesa para hacerla mía?</p>
+                                <div id="preview-promesa" class="ruled-box font-sans text-xs min-h-[75px]"></div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-black flex justify-between items-center text-xs font-serif font-bold tracking-widest uppercase">
+                            <span>RED DE DISCIPULADOS</span>
+                            <span class="text-[10px] font-sans font-normal text-gray-500">Página 2 de 2</span>
                         </div>
                     </div>
                 </div>
@@ -673,7 +763,7 @@
                         </div>
                         <div>
                             <h2 class="text-lg font-bold tema-texto-titulo">Mis Devocionales Guardados</h2>
-                            <p class="text-xs tema-texto-sub">Consulta, edita o vuelve a imprimir tus reflexiones previas</p>
+                            <p class="text-xs tema-texto-sub">Consulta, edita o elimina tus reflexiones previas</p>
                         </div>
                     </div>
                     
@@ -692,7 +782,8 @@
                                     <th class="py-3.5 px-5">Fecha</th>
                                     <th class="py-3.5 px-5">Discípulo</th>
                                     <th class="py-3.5 px-5">Pasaje Bíblico</th>
-                                    <th class="py-3.5 px-5 text-right">Acción</th>
+                                    <th class="py-3.5 px-5">Tipo</th>
+                                    <th class="py-3.5 px-5 text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="saved-reports-list" class="divide-y divide-slate-500/15"></tbody>
@@ -714,7 +805,7 @@
     <!-- MODAL: LOGIN -->
     <div class="modal-overlay oculto" id="modalLogin">
         <div class="modal-contenido">
-            <h3>Perfil de Usuario</h3>
+            <h3 class="font-bold text-lg mb-2">Perfil de Usuario</h3>
             <input type="text" id="txtUsuario" class="input-texto" placeholder="Usuario (Ej. Juan, María...)">
             <input type="password" id="txtPassword" class="input-texto" placeholder="Contraseña">
             <div id="msgErrorLogin" style="color:#ef4444; font-size:0.85rem; margin-top:8px; display:none;">Contraseña incorrecta.</div>
@@ -728,7 +819,7 @@
     <!-- MODAL: AVANCES -->
     <div class="modal-overlay oculto" id="modalAvances">
         <div class="modal-contenido">
-            <h3>Progreso y Gamificación</h3>
+            <h3 class="font-bold text-lg mb-2">Progreso y Gamificación</h3>
             <div class="grid-gamification">
               <div class="box-recompensa"><small>Gemas</small><div class="val">💎 <span id="modalGemas">0</span></div></div>
               <div class="box-recompensa"><small>Trofeos</small><div class="val">🏆 <span id="modalTrofeos">0</span></div></div>
@@ -738,7 +829,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT LOGICA UNIFICADA Y DESCARGA NATIVA INFALIBLE -->
+    <!-- SCRIPT DE LÓGICA GENERAL -->
     <script>
         const LIBROS_BIBLIA = [
           { id: 'GEN', nombre: 'Génesis', testamento: 'AT', archivo: 'Genesis.txt', caps: 50 },
@@ -819,6 +910,7 @@
         const temas = ['tema-serenidad', 'tema-clasico'];
         let indiceTemaActual = -1;
 
+        let modoDevocional = 'simple'; // 'simple' o 'discipulado'
         let currentReportId = null;
         let savedReports = [];
         let keyWordCount = 0;
@@ -832,7 +924,7 @@
             actualizarNavegacion();
         });
 
-        /* --- VISTAS Y NAVEGACIÓN --- */
+        /* --- VISTAS BIBLIA --- */
         function mostrarVistaBibliaPrincipal() {
             detenerAudio();
             document.getElementById('seccionBiblia').classList.remove('oculto');
@@ -854,8 +946,73 @@
                     document.getElementById('input-discipulo').value = usuarioActual;
                 }
             }
-            toggleReportTab(pestaña);
+
+            if (pestaña === 'discipulado') {
+                cambiarModoDevocional('discipulado');
+            } else if (pestaña === 'saved') {
+                toggleReportTab('saved');
+            } else {
+                cambiarModoDevocional('simple');
+            }
             actualizarNavegacion();
+        }
+
+        function cambiarModoDevocional(modo) {
+            modoDevocional = modo;
+            
+            const btnSimple = document.getElementById('btn-modo-simple');
+            const btnDiscipulado = document.getElementById('btn-modo-discipulado');
+            const campoIdea = document.getElementById('campo-idea-principal');
+            const campoSimple = document.getElementById('campo-aplicacion-simple');
+            const camposDiscipulado = document.getElementById('campos-discipulado-ext');
+            const btnImagen = document.getElementById('btnDescargarImagen');
+            const btnPreviewImagen = document.getElementById('btnPreviewDescargarImagen');
+
+            const previewBoxIdea = document.getElementById('preview-box-idea');
+            const previewBoxSimple = document.getElementById('preview-box-mandato-simple');
+            const page2 = document.getElementById('doc-page-2');
+
+            if (modo === 'simple') {
+                btnSimple.className = "px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white shadow border border-blue-500";
+                btnDiscipulado.className = "px-4 py-2 text-xs font-bold rounded-xl bg-slate-700/30 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-600 transition";
+                
+                document.getElementById('tituloEncabezadoReporte').innerText = "DEVOCIONAL DIARIO";
+                document.getElementById('preview-titulo-doc').innerText = "DEVOCIONAL DIARIO";
+                document.getElementById('preview-subtitulo-doc').innerText = "Reflexión y Aplicación Personal";
+                document.getElementById('preview-footer-title').innerText = "DEVOCIONAL DIARIO";
+                document.getElementById('preview-p1-meta').innerText = "Página 1 de 1";
+
+                campoIdea.classList.add('oculto');
+                campoSimple.classList.remove('oculto');
+                camposDiscipulado.classList.add('oculto');
+                if (btnImagen) btnImagen.classList.remove('oculto');
+                if (btnPreviewImagen) btnPreviewImagen.classList.remove('oculto');
+
+                previewBoxIdea.classList.add('oculto');
+                previewBoxSimple.classList.remove('oculto');
+                page2.classList.add('oculto');
+            } else {
+                btnDiscipulado.className = "px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 text-white shadow border border-blue-500";
+                btnSimple.className = "px-4 py-2 text-xs font-bold rounded-xl bg-slate-700/30 text-slate-400 hover:text-white hover:bg-slate-700/50 border border-slate-600 transition";
+
+                document.getElementById('tituloEncabezadoReporte').innerText = "TAREAS DE DISCIPULADO";
+                document.getElementById('preview-titulo-doc').innerText = "TAREAS DE DISCIPULADO";
+                document.getElementById('preview-subtitulo-doc').innerText = "Iglesia Bíblica Naciones a la Luz";
+                document.getElementById('preview-footer-title').innerText = "RED DE DISCIPULADOS";
+                document.getElementById('preview-p1-meta').innerText = "Página 1 de 2";
+
+                campoIdea.classList.remove('oculto');
+                campoSimple.classList.add('oculto');
+                camposDiscipulado.classList.remove('oculto');
+                if (btnImagen) btnImagen.classList.add('oculto');
+                if (btnPreviewImagen) btnPreviewImagen.classList.add('oculto');
+
+                previewBoxIdea.classList.remove('oculto');
+                previewBoxSimple.classList.add('oculto');
+                page2.classList.remove('oculto');
+            }
+
+            toggleReportTab('form');
         }
 
         function toggleReportTab(tabName) {
@@ -864,14 +1021,11 @@
             document.getElementById('view-saved').classList.add('hidden');
             
             const banner = document.getElementById('banner-devocional');
-            const tituloEncabezado = document.getElementById('tituloEncabezadoReporte');
 
             if (tabName === 'saved') {
                 banner.classList.add('hidden');
-                tituloEncabezado.innerText = "DEVOCIONALES GUARDADOS";
             } else {
                 banner.classList.remove('hidden');
-                tituloEncabezado.innerText = "DEVOCIONAL DIARIO";
             }
 
             ['form', 'preview', 'saved'].forEach(t => {
@@ -925,8 +1079,8 @@
             if (usuarioActual !== "Invitado") {
                 document.getElementById('input-discipulo').value = usuarioActual;
             }
+            cambiarModoDevocional('simple');
             updatePreviewDocument();
-            toggleReportTab('form');
             actualizarNavegacion();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1051,7 +1205,7 @@
                 </div>
                 <div class="bloque-texto-contenedor" id="contenedorTextoBloques"></div>
                 <button class="btn-continuar-cap" onclick="avanzarSiguienteCapitulo()">
-                  <span>Hacer Devocional de este Capítulo</span> 📝
+                  <span>Hacer Devocional Diario</span> 📝
                 </button>
             `;
             document.getElementById('vistaCapitulo').innerHTML = html;
@@ -1065,7 +1219,8 @@
             versiculos.forEach((v, idx) => {
                 const fila = document.createElement('div');
                 fila.className = 'fila-versiculo';
-                fila.innerHTML = `<span class="num-ver-estandar">${v.versiculo}</span><span class="texto-ver-estandar bloque-palabras" id="bloque-${idx}">${v.texto}</span>`;
+                fila.id = `fila-ver-${idx}`;
+                fila.innerHTML = `<span class="num-ver-estandar">${v.versiculo}</span><span class="texto-ver-estandar" id="bloque-${idx}">${v.texto}</span>`;
                 contenedor.appendChild(fila);
                 listaBloques.push({ id: idx, texto: v.texto });
             });
@@ -1074,7 +1229,9 @@
         function detenerAudio() {
             if (sintesis) sintesis.cancel();
             leyendoActual = false;
-            document.getElementById('reproductorFlotante').classList.add('oculto');
+            document.querySelectorAll('.fila-versiculo').forEach(el => el.classList.remove('leyendo'));
+            const repr = document.getElementById('reproductorFlotante');
+            if (repr) repr.classList.add('oculto');
         }
 
         function toggleAudioCapitulo() {
@@ -1102,8 +1259,12 @@
                 mensaje.lang = 'es-ES';
                 mensaje.rate = velocidadLectura;
                 mensaje.onstart = () => {
-                    document.querySelectorAll('.bloque-palabras').forEach(el => el.classList.remove('leyendo'));
-                    document.getElementById(`bloque-${idx}`)?.classList.add('leyendo');
+                    document.querySelectorAll('.fila-versiculo').forEach(el => el.classList.remove('leyendo'));
+                    const filaEl = document.getElementById(`fila-ver-${idx}`);
+                    if (filaEl) {
+                        filaEl.classList.add('leyendo');
+                        filaEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
                 };
                 mensaje.onend = () => { if (leyendoActual) leerSiguiente(idx + 1); };
                 sintesis.speak(mensaje);
@@ -1138,7 +1299,7 @@
           if (menu) menu.classList.remove('activo');
         }
 
-        /* --- CONTROL DE USUARIOS Y SESIÓN --- */
+        /* --- USUARIOS Y GAMIFICACIÓN --- */
         function actualizarEtiquetasUsuario() {
           const texto = usuarioActual !== "Invitado" ? usuarioActual : 'Inicio de sesión';
           document.querySelectorAll('.lblUsuarioMenu').forEach(el => el.innerText = texto);
@@ -1262,11 +1423,12 @@
           document.getElementById('modalAvances').classList.remove('oculto');
         }
 
-        /* --- DEVOCIONAL, PDF Y DESCARGA NATIVA DE IMAGEN --- */
+        /* --- MANEJO DE FORMULARIO, PDF E IMAGEN --- */
         function addKeyWordRow(word = '', meaning = '') {
             keyWordCount++;
             const container = document.getElementById('keywords-container');
             const rowId = `kw-row-${keyWordCount}`;
+
             const row = document.createElement('div');
             row.id = rowId;
             row.className = 'flex items-center gap-2 p-2 rounded-xl border tema-card';
@@ -1276,18 +1438,31 @@
                 <button type="button" onclick="document.getElementById('${rowId}').remove(); updatePreviewDocument();" class="text-red-500 p-1">✕</button>
             `;
             container.appendChild(row);
-            
-            row.querySelectorAll('input').forEach(i => i.addEventListener('input', updatePreviewDocument));
+
+            row.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', updatePreviewDocument);
+            });
+
+            updatePreviewDocument();
         }
 
         function setupLiveSync() {
-            ['input-fecha', 'input-discipulo', 'input-libro', 'input-capitulo', 'input-impresion', 'input-mandato'].forEach(id => {
-                document.getElementById(id)?.addEventListener('input', updatePreviewDocument);
+            const inputs = [
+                'input-fecha', 'input-discipulo', 'input-libro', 'input-capitulo',
+                'input-impresion', 'input-idea', 'input-mandato-simple', 'input-vida',
+                'input-mandato', 'input-ejemplo', 'input-pecado', 'input-promesa'
+            ];
+
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', updatePreviewDocument);
+                }
             });
         }
 
         function updatePreviewDocument() {
-            const fechaVal = document.getElementById('input-fecha').value.split('-').reverse().join('/');
+            const fechaVal = formatDateDisplay(document.getElementById('input-fecha').value);
             const libroVal = document.getElementById('input-libro').value.trim() || '—';
             const capVal = document.getElementById('input-capitulo').value.trim() || '—';
             const discipuloVal = document.getElementById('input-discipulo').value.trim() || '—';
@@ -1295,73 +1470,93 @@
             document.getElementById('preview-fecha').innerText = fechaVal;
             document.getElementById('preview-pasaje').innerText = `${libroVal} ${capVal}`;
             document.getElementById('preview-discipulo').innerText = discipuloVal;
+
             document.getElementById('preview-impresion').innerText = document.getElementById('input-impresion').value || 'Sin observaciones.';
-            document.getElementById('preview-mandato').innerText = document.getElementById('input-mandato').value || 'Sin aplicación anotada.';
+            document.getElementById('preview-idea').innerText = document.getElementById('input-idea').value || 'Sin idea principal.';
+            document.getElementById('preview-mandato-simple').innerText = document.getElementById('input-mandato-simple').value || 'Sin aplicación anotada.';
+
+            document.getElementById('preview-vida').innerText = document.getElementById('input-vida').value;
+            document.getElementById('preview-mandato').innerText = document.getElementById('input-mandato').value;
+            document.getElementById('preview-ejemplo').innerText = document.getElementById('input-ejemplo').value;
+            document.getElementById('preview-pecado').innerText = document.getElementById('input-pecado').value;
+            document.getElementById('preview-promesa').innerText = document.getElementById('input-promesa').value;
+
             document.getElementById('preview-p2-meta').innerText = `${libroVal} ${capVal} • ${discipuloVal}`;
 
             const tableBody = document.getElementById('preview-keywords-body');
             tableBody.innerHTML = '';
-            let tienePalabras = false;
-            document.querySelectorAll('#keywords-container > div').forEach(row => {
+
+            const kwRows = document.querySelectorAll('#keywords-container > div');
+            let hasWords = false;
+
+            kwRows.forEach(row => {
                 const w = row.querySelector('.kw-palabra').value.trim();
                 const s = row.querySelector('.kw-significado').value.trim();
+
                 if (w || s) {
-                    tienePalabras = true;
-                    tableBody.innerHTML += `<tr><td class="border border-black p-2 font-semibold">${escapeHtml(w)}</td><td class="border border-black p-2">${escapeHtml(s)}</td></tr>`;
+                    hasWords = true;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="border border-black p-2 font-semibold align-top">${escapeHtml(w)}</td>
+                        <td class="border border-black p-2 align-top">${escapeHtml(s)}</td>
+                    `;
+                    tableBody.appendChild(tr);
                 }
             });
-            if (!tienePalabras) {
+
+            if (!hasWords) {
                 tableBody.innerHTML = `<tr><td colspan="2" class="border border-black p-2 text-center text-gray-500 italic">No se agregaron palabras clave</td></tr>`;
             }
         }
 
+        function formatDateDisplay(dateStr) {
+            if (!dateStr) return '___/___/______';
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            return dateStr;
+        }
+
         function escapeHtml(text) {
-            return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;")
+                       .replace(/</g, "&lt;")
+                       .replace(/>/g, "&gt;")
+                       .replace(/"/g, "&quot;")
+                       .replace(/'/g, "&#039;");
         }
 
         function downloadPDF() {
             updatePreviewDocument();
-            const element = document.getElementById('doc-page-1');
+            const element = document.getElementById('pdf-container');
+            const discipulo = document.getElementById('input-discipulo').value.trim() || 'Discipulo';
+            const libro = document.getElementById('input-libro').value.trim() || 'Pasaje';
+            const capitulo = document.getElementById('input-capitulo').value.trim() || '';
             
-            // Renderizado vectorial directo por html2pdf.js con opciones optimizadas para evitar páginas en blanco
-            const opt = { 
-                margin: [10, 10, 10, 10], 
-                filename: `Devocional_${document.getElementById('input-libro').value || 'Biblia'}_${document.getElementById('input-capitulo').value || '1'}.pdf`, 
-                image: { type: 'jpeg', quality: 0.98 }, 
-                html2canvas: { scale: 2, useCORS: true, logging: false, letterRendering: true }, 
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+            const prefijo = modoDevocional === 'simple' ? 'Devocional' : 'Tareas_Discipulado';
+            const filename = `${prefijo}_${discipulo}_${libro}_${capitulo}.pdf`.replace(/\s+/g, '_');
+
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            // Creamos un contenedor temporal visible en pantalla pero fuera de la vista para asegurar renderizado correcto
-            const tempContainer = document.createElement('div');
-            tempContainer.style.position = 'absolute';
-            tempContainer.style.left = '0';
-            tempContainer.style.top = '-9999px';
-            tempContainer.style.width = '210mm';
-            const clone = element.cloneNode(true);
-            tempContainer.appendChild(clone);
-            document.body.appendChild(tempContainer);
-
-            html2pdf().set(opt).from(clone).save().then(() => {
-                document.body.removeChild(tempContainer);
-            }).catch(err => {
-                if (tempContainer.parentNode) {
-                    document.body.removeChild(tempContainer);
-                }
-                console.error("Error al generar PDF:", err);
-                alert("Hubo un error al generar el PDF. Intenta nuevamente.");
-            });
+            html2pdf().set(opt).from(element).save();
         }
 
         function downloadImage() {
             updatePreviewDocument();
             
-            const fecha = document.getElementById('input-fecha').value.split('-').reverse().join('/') || '—';
+            const fecha = formatDateDisplay(document.getElementById('input-fecha').value);
             const discipulo = document.getElementById('input-discipulo').value || '—';
             const libro = document.getElementById('input-libro').value || 'Biblia';
             const capitulo = document.getElementById('input-capitulo').value || '1';
             const impresion = document.getElementById('input-impresion').value || 'Sin observaciones.';
-            const mandato = document.getElementById('input-mandato').value || 'Sin aplicación anotada.';
+            const mandato = document.getElementById('input-mandato-simple').value || 'Sin aplicación anotada.';
 
             const keywords = [];
             document.querySelectorAll('#keywords-container > div').forEach(row => {
@@ -1495,10 +1690,7 @@
 
             const nombreArchivo = `Devocional_${libro}_${capitulo}.png`;
             canvas.toBlob((blob) => {
-                if (!blob) {
-                    alert('No se pudo generar la imagen.');
-                    return;
-                }
+                if (!blob) return;
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -1521,8 +1713,7 @@
                 for (let n = 0; n < words.length; n++) {
                     const testLine = line + words[n] + ' ';
                     const metrics = context.measureText(testLine);
-                    const testWidth = metrics.width;
-                    if (testWidth > maxWidth && n > 0) {
+                    if (metrics.width > maxWidth && n > 0) {
                         context.fillText(line, x, currentY);
                         line = words[n] + ' ';
                         currentY += lineHeight;
@@ -1537,104 +1728,192 @@
 
         function limpiarFormulario() {
             document.getElementById('discipleship-form').reset();
-            document.getElementById('input-fecha').value = new Date().toISOString().split('T')[0];
-            document.getElementById('keywords-container').innerHTML = '';
-            keyWordCount = 0;
-            addKeyWordRow();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('input-fecha').value = today;
             if (usuarioActual !== "Invitado") {
                 document.getElementById('input-discipulo').value = usuarioActual;
             }
+            
+            document.getElementById('keywords-container').innerHTML = '';
+            keyWordCount = 0;
+            addKeyWordRow();
+            currentReportId = null;
             updatePreviewDocument();
         }
 
         function saveReport() {
-            const idToSave = currentReportId || 'rep_' + Date.now();
+            const discipulo = document.getElementById('input-discipulo').value.trim();
+            const libro = document.getElementById('input-libro').value.trim();
+
+            if (!discipulo || !libro) {
+                mostrarToastRecompensa('⚠️ Completa el nombre del discípulo y el libro.');
+                return;
+            }
+
+            const keywords = [];
+            document.querySelectorAll('#keywords-container > div').forEach(row => {
+                const w = row.querySelector('.kw-palabra').value.trim();
+                const s = row.querySelector('.kw-significado').value.trim();
+                if (w || s) {
+                    keywords.push({ word: w, meaning: s });
+                }
+            });
+
             const reportData = {
-                id: idToSave,
+                id: currentReportId || 'rep_' + Date.now(),
+                tipo: modoDevocional,
                 fecha: document.getElementById('input-fecha').value,
-                discipulo: document.getElementById('input-discipulo').value,
-                libro: document.getElementById('input-libro').value,
-                capitulo: document.getElementById('input-capitulo').value,
+                discipulo: discipulo,
+                libro: libro,
+                capitulo: document.getElementById('input-capitulo').value.trim(),
                 impresion: document.getElementById('input-impresion').value,
-                mandato: document.getElementById('input-mandato').value
+                idea: document.getElementById('input-idea').value,
+                keywords: keywords,
+                mandatoSimple: document.getElementById('input-mandato-simple').value,
+                vida: document.getElementById('input-vida').value,
+                mandato: document.getElementById('input-mandato').value,
+                ejemplo: document.getElementById('input-ejemplo').value,
+                pecado: document.getElementById('input-pecado').value,
+                promesa: document.getElementById('input-promesa').value
             };
-            
-            const existingIndex = savedReports.findIndex(r => r.id === idToSave);
-            if (existingIndex !== -1) {
+
+            const existingIndex = savedReports.findIndex(r => r.id === reportData.id);
+            if (existingIndex >= 0) {
                 savedReports[existingIndex] = reportData;
             } else {
                 savedReports.unshift(reportData);
+                currentReportId = reportData.id;
             }
-            
-            currentReportId = idToSave;
-            localStorage.setItem(`ibnl_reports_${usuarioActual}`, JSON.stringify(savedReports));
-            mostrarToastRecompensa('💾 Devocional guardado con éxito');
+
+            persistReportsToStorage();
+            updateSavedBadge();
+            mostrarToastRecompensa('💾 ¡Devocional guardado con éxito!');
+        }
+
+        function loadReportIntoForm(reportId) {
+            const report = savedReports.find(r => r.id === reportId);
+            if (!report) return;
+
+            currentReportId = report.id;
+            document.getElementById('input-fecha').value = report.fecha || '';
+            document.getElementById('input-discipulo').value = report.discipulo || '';
+            document.getElementById('input-libro').value = report.libro || '';
+            document.getElementById('input-capitulo').value = report.capitulo || '';
+            document.getElementById('input-impresion').value = report.impresion || '';
+            document.getElementById('input-idea').value = report.idea || '';
+            document.getElementById('input-mandato-simple').value = report.mandatoSimple || '';
+            document.getElementById('input-vida').value = report.vida || '';
+            document.getElementById('input-mandato').value = report.mandato || '';
+            document.getElementById('input-ejemplo').value = report.ejemplo || '';
+            document.getElementById('input-pecado').value = report.pecado || '';
+            document.getElementById('input-promesa').value = report.promesa || '';
+
+            const container = document.getElementById('keywords-container');
+            container.innerHTML = '';
+            keyWordCount = 0;
+
+            if (report.keywords && report.keywords.length > 0) {
+                report.keywords.forEach(kw => addKeyWordRow(kw.word, kw.meaning));
+            } else {
+                addKeyWordRow();
+            }
+
+            cambiarModoDevocional(report.tipo || 'simple');
+            mostrarToastRecompensa(`📂 Cargar: ${report.libro} ${report.capitulo}`);
+        }
+
+        function deleteReport(reportId) {
+            if (!confirm("¿Deseas eliminar este reporte guardado?")) return;
+            savedReports = savedReports.filter(r => r.id !== reportId);
+            if (currentReportId === reportId) {
+                currentReportId = null;
+            }
+            persistReportsToStorage();
             renderSavedReportsTable();
+            updateSavedBadge();
+            mostrarToastRecompensa('🗑️ Reporte eliminado');
+        }
+
+        function createNewReport() {
+            currentReportId = null;
+            limpiarFormulario();
+            cambiarModoDevocional('simple');
         }
 
         function renderSavedReportsTable() {
             const tableBody = document.getElementById('saved-reports-list');
             tableBody.innerHTML = '';
-            
+
             if (savedReports.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="4" class="py-8 text-center tema-texto-sub">
-                            <p class="text-sm">No hay devocionales guardados para la sesión actual (${escapeHtml(usuarioActual)}).</p>
+                        <td colspan="5" class="py-8 text-center tema-texto-sub">
+                            <p class="text-sm">No hay devocionales guardados para el usuario actual (${escapeHtml(usuarioActual)}).</p>
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            savedReports.forEach(r => {
-                const fechaFmt = r.fecha ? r.fecha.split('-').reverse().join('/') : '—';
-                tableBody.innerHTML += `
-                    <tr class="hover:bg-slate-500/5 transition">
-                        <td class="py-3.5 px-5 font-medium tema-texto-titulo">${fechaFmt}</td>
-                        <td class="py-3.5 px-5 tema-texto-sub">${escapeHtml(r.discipulo) || '—'}</td>
-                        <td class="py-3.5 px-5">
-                            <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                                ${escapeHtml(r.libro)} ${escapeHtml(r.capitulo)}
-                            </span>
-                        </td>
-                        <td class="py-3.5 px-5 text-right">
-                            <button onclick="loadReport('${r.id}')" class="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition inline-flex items-center gap-1">
-                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Abrir
-                            </button>
-                        </td>
-                    </tr>
+            savedReports.forEach(report => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-500/5 transition';
+                const tipoTexto = report.tipo === 'discipulado' ? '📋 Discipulado (2 Págs)' : '📝 Devocional (1 Pág)';
+                tr.innerHTML = `
+                    <td class="py-3.5 px-5 font-mono text-xs tema-texto-sub">${formatDateDisplay(report.fecha)}</td>
+                    <td class="py-3.5 px-5 font-semibold tema-texto-titulo">${escapeHtml(report.discipulo)}</td>
+                    <td class="py-3.5 px-5">
+                        <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                            ${escapeHtml(report.libro)} ${escapeHtml(report.capitulo)}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-5 text-xs tema-texto-sub">${tipoTexto}</td>
+                    <td class="py-3.5 px-5 text-right space-x-2">
+                        <button onclick="loadReportIntoForm('${report.id}')" class="px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow transition inline-flex items-center gap-1">
+                            Abrir
+                        </button>
+                        <button onclick="deleteReport('${report.id}')" class="px-2.5 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg shadow transition inline-flex items-center gap-1">
+                            🗑️
+                        </button>
+                    </td>
                 `;
+                tableBody.appendChild(tr);
             });
+
             lucide.createIcons();
         }
 
-        function loadReport(id) {
-            const r = savedReports.find(x => x.id === id);
-            if (!r) return;
-            currentReportId = r.id;
-            document.getElementById('input-fecha').value = r.fecha;
-            document.getElementById('input-discipulo').value = r.discipulo;
-            document.getElementById('input-libro').value = r.libro;
-            document.getElementById('input-capitulo').value = r.capitulo;
-            document.getElementById('input-impresion').value = r.impresion;
-            document.getElementById('input-mandato').value = r.mandato;
-            toggleReportTab('form');
+        function persistReportsToStorage() {
+            try {
+                localStorage.setItem(`ibnl_reports_${usuarioActual}`, JSON.stringify(savedReports));
+            } catch (e) {
+                console.warn('Storage quota error', e);
+            }
         }
 
         function loadSavedReportsFromStorage() {
             try {
-                savedReports = JSON.parse(localStorage.getItem(`ibnl_reports_${usuarioActual}`)) || [];
-            } catch(e) {
+                const data = localStorage.getItem(`ibnl_reports_${usuarioActual}`);
+                if (data) {
+                    savedReports = JSON.parse(data);
+                    updateSavedBadge();
+                } else {
+                    savedReports = [];
+                }
+            } catch (e) {
                 savedReports = [];
             }
             renderSavedReportsTable();
         }
 
-        function createNewReport() {
-            currentReportId = null;
-            limpiarFormulario();
-            toggleReportTab('form');
+        function updateSavedBadge() {
+            const badge = document.getElementById('saved-badge');
+            if (savedReports.length > 0) {
+                badge.innerText = savedReports.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
         }
     </script>
 </body>
