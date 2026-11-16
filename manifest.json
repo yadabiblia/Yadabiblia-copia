@@ -10,4 +10,6 @@
   "theme_color": "#ffffff",
   "id": "Yadabiblia",
   "description": "Lectura y reporte"
+  "icons": [{"src": "launchericon-192x192.png", "sizes": "192x192", "type": "image/png"}].
+  
 }
