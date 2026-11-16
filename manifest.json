@@ -9,5 +9,7 @@
   "start_url": "/",
   "theme_color": "#ffffff",
   "id": "Biblia",
-  "description": "Lectura"
+  "description": "Lectura",
+  "icons": [{"src": "launchericon-192x192.png", "sizes": "192x192", "type": "image/png"}]
+  
 }
