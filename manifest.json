@@ -9,4 +9,6 @@
   "start_url": "/",
   "theme_color": "#ffffff",
   "id": "Yadabiblia"
+  "icons": [{"src": "1794805187967.jpg", "sizes": "192x192", "type": "image/jpeg"}]
+  
 }
